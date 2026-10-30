@@ -700,6 +700,88 @@
         addMsg(`📥 学习文档已导出，共整理 ${questionCount} 个问题！`, true);
     };
 
+    // ================= 生成知识图谱 =================
+    const graphContainer = document.getElementById('graphContainer');
+    let myChart = null;
+
+    document.getElementById('backToChatBtn').onclick = function() {
+        graphContainer.style.display = 'none';
+        chatBox.style.display = 'block';
+    };
+
+    //=========================两个模块==========================
+    document.getElementById('genGraphBtn').onclick = async function() {
+    // 改动1：魔塔 API 或 Ollama 任一开启即可
+    if (!useLocalKb && !useAiApi) {
+        return addMsg("⚠️ 请先在左侧开启任一模型（AI 调用访问 或 本地知识库访问）！", false, true);
+    }
+
+    const msgItems = document.querySelectorAll('.msg-item');
+    let historyText = "";
+    msgItems.forEach(item => {
+        const text = item.querySelector('.bubble').innerText.trim();
+        if (text.includes('已开启') || text.includes('已关闭') || text.includes('正在思考')) return;
+        historyText += (item.classList.contains('msg-right') ? `学生问：${text}\n` : `AI答：${text}\n`);
+    });
+
+    if (historyText.length < 10) return addMsg("⚠️ 聊天内容太少！", false, true);
+
+    addMsg("正在提取数据并构建知识图谱...", true);
+    showLoading();
+
+    try {
+        const prompt = `你是数据提取机器人。请提取对话中的知识点关系。必须且只能输出合法的 JSON 格式，绝对不要输出任何解释性文字，不要使用 \`\`\`json 包裹！
+格式样例：
+{
+  "nodes": [{"name": "核心概念", "category": 0, "symbolSize": 50}],
+  "links": [{"source": "核心概念", "target": "薄弱点A", "value": "包含"}],
+  "categories": [{"name": "核心模块"}, {"name": "普通知识点"}, {"name": "薄弱/易错点"}]
+}
+对话记录：\n${historyText}`;
+
+        // 改动2：根据当前开启的模型决定走 3000(魔塔) 还是 3001(Ollama)
+        const payloadExtra = (useLocalKb && pdfText) ? { pdfText } : {};
+        const data = await requestAI(prompt, useLocalKb, payloadExtra);
+        removeLoading();
+
+        if (data.reply) {
+            let jsonStr = data.reply;
+            const firstBrace = jsonStr.indexOf('{');
+            const lastBrace = jsonStr.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+            }
+
+            const graphData = JSON.parse(jsonStr);
+            chatBox.style.display = 'none';
+            graphContainer.style.display = 'block';
+
+            if (!myChart) myChart = echarts.init(document.getElementById('graphChart'));
+
+            const option = {
+                tooltip: { formatter: '{b}' },
+                legend: [{ data: graphData.categories.map(a => a.name), bottom: 0 }],
+                series: [{
+                    type: 'graph', layout: 'force', data: graphData.nodes, links: graphData.links, categories: graphData.categories, roam: true,
+                    label: { show: true, position: 'right', formatter: '{b}' },
+                    force: { repulsion: 300, edgeLength: [50, 150], useWorker: true },
+                    itemStyle: { color: function(params) { return ['#4078e8', '#8b5cf6', '#e84c3d'][params.data.category || 0]; }},
+                    lineStyle: { color: 'source', curveness: 0.2, width: 2 },
+                    edgeSymbol: ['none', 'arrow'], edgeSymbolSize: 8
+                }]
+            };
+            myChart.setOption(option);
+            setTimeout(() => { myChart.resize(); }, 100);
+            addMsg("✅ 知识图谱生成成功！已展示在右侧。", true);
+        } else if (data.error) {
+            addMsg(`❌ 错误：${data.error}`, false, true);
+        }
+    } catch (error) {
+        removeLoading();
+        addMsg(`❌ 解析失败：模型输出的格式不标准。你可以再点一次重试。`, false, true);
+    }
+};
+
 
 </script>          
   
