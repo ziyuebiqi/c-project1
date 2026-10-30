@@ -371,6 +371,23 @@
     </div>        
 
 <script>
+
+    const chatBox = document.getElementById('chatBox');
+    const inputText = document.getElementById('inputText');
+    const sendBtn = document.getElementById('sendBtn');
+    const API_URL = 'http://localhost:3000/api/chat';
+    const LOCAL_API_URL = 'http://localhost:3001/api/ollama';
+
+    let useAiApi = false;
+    let useLocalKb = false;
+
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFile');
+    const pdfStatus = document.getElementById('pdfStatus');
+    let pdfText = '';
+    let lastQuizContent = '';
+    let lastQuizTopic = '';
+
     // ================= 聊天逻辑 =================
     function showLoading() {
         const div = document.createElement('div');
