@@ -370,6 +370,20 @@
         </div>
     </div>        
 
+    <!-- 弹窗 HTML -->
+    <div class="modal-overlay" id="quizModal">
+        <div class="modal-box">
+            <h3>✍️ 生成专属考题</h3>
+            <p>请输入你想练习的知识点，AI 将为您生成配套试卷。</p>
+            <input type="text" id="quizTopic" placeholder="例如：C语言指针、数组等">
+            <div class="modal-actions">
+                <button class="btn-cancel" id="cancelQuizBtn">取消</button>
+                <button class="btn-confirm" id="confirmQuizBtn">生成试卷</button>
+            </div>
+        </div>
+    </div>
+
+
 <script>
 
     const chatBox = document.getElementById('chatBox');
@@ -641,6 +655,51 @@
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         addMsg(`📥 题目文件已导出！`, true);
     };
+
+    // ================= 生成学习文档（核心新增） =================
+    document.getElementById('downloadDocBtn').onclick = function() {
+        const msgItems = document.querySelectorAll('.msg-item');
+        let docContent = '';
+        let questionCount = 0;
+
+        msgItems.forEach(item => {
+            if (item.id === 'loadingMsg') return;
+            const bubble = item.querySelector('.bubble');
+            if (!bubble) return;
+            // 过滤系统提示（开启/关闭模型、错误提示等）
+            if (bubble.dataset.system === '1') return;
+
+            // 优先用 data-raw 里的原始 Markdown 文本
+            const raw = (bubble.dataset.raw || bubble.innerText || '').trim();
+            if (!raw) return;
+
+            const isUser = item.classList.contains('msg-right');
+            if (isUser) {
+                questionCount++;
+                docContent += `## 问题 ${questionCount}\n\n${raw}\n\n`;
+            } else {
+                docContent += `### 解答\n\n${raw}\n\n---\n\n`;
+            }
+        });
+
+        if (questionCount === 0) {
+            alert('当前还没有问答记录，先去问点问题吧！');
+            return;
+        }
+
+        const header = `# C语言学习文档\n\n生成时间：${new Date().toLocaleString()}\n\n共整理 ${questionCount} 个问题\n\n---\n\n`;
+        const fullContent = header + docContent;
+
+        const blob = new Blob([fullContent], { type: 'text/markdown;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `C语言学习文档_${new Date().toISOString().slice(0,10)}.md`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+
+        addMsg(`📥 学习文档已导出，共整理 ${questionCount} 个问题！`, true);
+    };
+
 
 </script>          
   
