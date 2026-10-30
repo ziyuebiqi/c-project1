@@ -490,6 +490,64 @@
         }
     };
 
+    // ================= 题目生成与导出 =================
+    const quizModal = document.getElementById('quizModal');
+    const quizTopic = document.getElementById('quizTopic');
+    const exportQuizBtn = document.getElementById('exportQuizBtn');
+
+    document.getElementById('genQuizBtn').onclick = function() {
+        if (!useLocalKb && !useAiApi) return addMsg("⚠️ 请先在左侧开启任一模型！", false, true);
+        quizModal.classList.add('show');
+        quizTopic.value = '';
+        quizTopic.focus();
+    };
+
+    document.getElementById('cancelQuizBtn').onclick = function() {
+        quizModal.classList.remove('show');
+    };
+
+    document.getElementById('confirmQuizBtn').onclick = async function() {
+        const topic = quizTopic.value.trim();
+        if (!topic) return alert('请输入知识点！');
+
+        quizModal.classList.remove('show');
+        exportQuizBtn.style.display = 'none';
+        lastQuizTopic = topic;
+
+        const prompt = `你现在是一个C语言出题老师。请围绕【${topic}】这个知识点出一套试卷。严格包含单选题、改错题、编程题。必须包含答案解析。请使用 Markdown 格式排版。`;
+
+        addMsg(`请帮我出关于【${topic}】的题目`, true);
+        showLoading();
+
+        try {
+            const payloadExtra = (useLocalKb && pdfText) ? { pdfText } : {};
+            const data = await requestAI(prompt, useLocalKb, payloadExtra);
+
+            removeLoading();
+            if (data.reply) {
+                addMsg(data.reply, false, false);
+                lastQuizContent = data.reply;
+                exportQuizBtn.style.display = 'block';
+            }
+            else if (data.error) addMsg(`❌ 错误：${data.error}`, false, true);
+        } catch (error) {
+            removeLoading();
+            addMsg(`❌ 网络连接失败！`, false, true);
+        }
+    };
+
+    exportQuizBtn.onclick = function() {
+        if (!lastQuizContent) return;
+        const docHeader = `# C语言专项练习：${lastQuizTopic}\n\n生成时间：${new Date().toLocaleString()}\n\n---\n\n`;
+        const fullContent = docHeader + lastQuizContent;
+        const blob = new Blob([fullContent], { type: 'text/markdown;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `C语言题目_${lastQuizTopic}_${new Date().toISOString().slice(0,10)}.md`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        addMsg(`📥 题目文件已导出！`, true);
+    };
+
 </script>          
   
 </body>
