@@ -1,0 +1,479 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C语言AI小助手</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        /* ================= 全局基础设置 ================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft Yahei", sans-serif;
+        }
+        body {
+            background-color: rgb(177, 206, 226);
+            background-size: cover;
+            background-attachment: fixed;
+            color: #1f2328;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ================= 整体布局 ================= */
+        .app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1500px;
+            height: calc(100vh - 40px);
+            margin: 20px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        /* ================= 左侧侧边栏 ================= */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, rgba(49, 108, 225, 0.9) 0%, rgba(9, 62, 169, 0.6) 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            gap: 12px;
+        }
+
+        .sidebar-logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 20px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-btn.active {
+            background-color: #ffffff;
+            color: #4078e8;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn .icon {
+            font-size: 18px;
+        }
+
+        .kb-badge {
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: auto;
+            display: none;
+        }
+
+        /* ================= 右侧主内容区 ================= */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f7f7f9;
+            position: relative;
+            height: 100%;
+        }
+
+        .top-bar {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 24px;
+            background-color: #f7f7f9;
+            flex-shrink: 0;
+        }
+        .top-bar h2 {
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .chat-content {
+            flex: 1;
+            padding: 20px 8%;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .msg-item {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            max-width: 850px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .msg-left { justify-content: flex-start; }
+        .msg-right { justify-content: flex-end; flex-direction: row-reverse; }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #eef3ff;
+            color: #4078e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .msg-right .avatar { background: #4078e8; color: white; }
+
+        .msg-left .bubble {
+            background: #ffffff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            border: 1px solid #e5e7eb;
+            color: #1f2328;
+            max-width: calc(100% - 60px);
+            line-height: 1.7;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .msg-right .bubble {
+            padding: 12px 18px;
+            border-radius: 16px 16px 4px 16px;
+            font-size: 15px;
+            background: #eef3ff;
+            color: #1f2328;
+            max-width: calc(100% - 60px);
+        }
+
+        .bubble pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 12px 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        .bubble code {
+            font-family: Consolas, monospace;
+            background: rgba(0,0,0,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .bubble pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .quiz-action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed #e5e7eb;
+        }
+        .quiz-tags-container { display: flex; align-items: center; gap: 8px; }
+        .knowledge-tag {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .quiz-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #5c6b8a;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .quiz-action-btn:hover { background: #eef3ff; color: #4078e8; }
+        .quiz-action-btn.added { color: #10b981; background: #ecfdf5; cursor: default; }
+
+        /* ================= 底部输入区 ================= */
+        .chat-bottom {
+            padding: 20px 8% 20px;
+            background-color: #f7f7f9;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .input-box {
+            width: 100%;
+            max-width: 850px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-box:focus-within { border-color: #4078e8; box-shadow: 0 4px 20px rgba(64, 120, 232, 0.1); }
+
+        #inputText {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #1f2328;
+            background: transparent;
+            padding: 8px 0;
+        }
+        #sendBtn {
+            width: 36px; height: 36px; border-radius: 10px; border: none;
+            background: #4078e8; color: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s;
+        }
+
+        #exportQuizBtn {
+            display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+            padding: 10px 24px; background: #4078e8; color: white; border: none; border-radius: 20px;
+            font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(64, 120, 232, 0.3); z-index: 100;
+        }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3); z-index: 999; backdrop-filter: blur(4px); justify-content: center; align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: #fff; padding: 28px; border-radius: 16px; width: 440px; }
+        .modal-box h3 { margin-bottom: 8px; }
+        .modal-box p { font-size: 13px; color: #666; margin-bottom: 20px; }
+        .modal-box input { width: 100%; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 24px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+        .modal-actions button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .btn-cancel { background: #f3f4f6; color: #4b5563; }
+        .btn-confirm { background: #4078e8; color: #fff; }
+
+        .pdf-upload {
+            display: none; max-width: 850px; margin: 0 auto 10px; padding: 8px 16px; background: #fff; border-radius: 10px; font-size: 13px; color: #4078e8; align-items: center; gap: 10px; border: 1px solid #e5e7eb;
+        }
+        .pdf-upload.show { display: flex; }
+
+        #graphContainer { display: none; flex: 1; padding: 20px; position: relative; height: 100%; width: 100%; background: #fff; border-radius: 16px; margin: 0 8%; }
+        #graphChart { width: 100%; height: 100%; min-height: 500px; }
+        #backToChatBtn { position: absolute; top: 20px; right: 20px; z-index: 10; padding: 8px 16px; background: #f3f4f6; color: #4b5563; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <span style="color:#ffffff; font-size:24px;">✦</span> C语言 AI 助手
+            </div>
+            <div class="nav-btn" id="aiApiBtn">
+                <span class="icon">🤖</span> AI 调用访问
+            </div>
+            <div class="nav-btn" id="localKbBtn">
+                <span class="icon">📦</span> 本地知识库访问
+            </div>
+            <div class="nav-btn" id="genQuizBtn">
+                <span class="icon">✍️</span> 生成专属题目
+            </div>
+            <div class="nav-btn" id="downloadDocBtn">
+                <span class="icon">📥</span> 生成学习文档
+            </div>
+            <div class="nav-btn" id="genGraphBtn">
+                <span class="icon">🕸️</span> 生成知识图谱
+            </div>
+            <div class="nav-btn" id="myKbBtn">
+                <span class="icon">📚</span> 我的题库
+                <span class="kb-badge" id="kbBadge">0</span>
+            </div>
+        </div>
+        <!-- 右侧主内容区 -->
+        <div class="main-content">
+            <div class="top-bar">
+                <h2>有什么C语言问题，尽管问我</h2>
+            </div>
+
+            <div class="chat-content" id="chatBox">
+                <div class="msg-item msg-left">
+                    <div class="avatar">✦</div>
+                    <div class="bubble" data-raw="你好，我是C语言AI小助手！点击左侧【AI调用访问】或【本地知识库访问】开启对话，也可以点击【生成专属题目】来测试一下自己。">你好，我是C语言AI小助手！点击左侧【AI调用访问】或【本地知识库访问】开启对话，也可以点击【生成专属题目】来测试一下自己。</div>
+                </div>
+            </div>
+
+              <div id="graphContainer">
+                <button id="backToChatBtn">⬅ 返回聊天</button>
+                <div id="graphChart"></div>
+            </div>
+
+            <button id="exportQuizBtn">📥 保存本次试卷 (Markdown)</button>
+
+            <div class="chat-bottom" style="flex-direction: column;">
+                <div class="pdf-upload" id="pdfUploadArea">
+                    <span>📄 上传 PDF：</span>
+                    <input type="file" id="pdfFile" accept="application/pdf">
+                    <span id="pdfStatus">未选择文件</span>
+                </div>
+                <div class="input-box">
+                    <input type="text" id="inputText" placeholder="输入你的问题，按 Enter 发送...">
+                    <button id="sendBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>        
+
+<script>
+    // ================= 聊天逻辑 =================
+    function showLoading() {
+        const div = document.createElement('div');
+        div.className = 'msg-item msg-left';
+        div.id = 'loadingMsg';
+        div.innerHTML = `<div class="avatar">✦</div><div class="bubble" style="color:#888;">正在思考中...</div>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeLoading() {
+        const loading = document.getElementById('loadingMsg');
+        if (loading) loading.remove();
+    }
+
+    async function requestAI(prompt, useLocal, payloadExtra = {}) {
+        const url = useLocal ? LOCAL_API_URL : API_URL;
+        const payload = { message: prompt, ...payloadExtra };
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        return await response.json();
+    }
+
+    async function send() {
+        const text = inputText.value.trim();
+        if (!text) return;
+
+        addMsg(text, true);
+        inputText.value = '';
+        lastQuizTopic = text.substring(0, 10);
+
+        if(!useAiApi && !useLocalKb){
+            addMsg("⚠️ 请先在左侧开启任一模型！", false, true);
+            return;
+        }
+
+        showLoading();
+        try {
+            const payloadExtra = (useLocalKb && pdfText) ? { pdfText } : {};
+            const data = await requestAI(text, useLocalKb, payloadExtra);
+
+            removeLoading();
+            if (data.reply) addMsg(data.reply);
+            else if (data.error) addMsg(`❌ 错误：${data.error}`, false, true);
+        } catch (error) {
+            removeLoading();
+            addMsg(`❌ 网络连接失败！`, false, true);
+        }
+    }
+    sendBtn.onclick = send;
+    inputText.onkeydown = e => { if (e.key === 'Enter') send(); };
+
+
+    // ================= 其他基础控制逻辑 =================
+    document.getElementById('aiApiBtn').onclick = function(){
+        useAiApi = !useAiApi;
+        this.classList.toggle('active', useAiApi);
+        if (useAiApi && useLocalKb) { useLocalKb = false; document.getElementById('localKbBtn').classList.remove('active'); }
+        pdfUploadArea.classList.toggle('show', useLocalKb);
+        addMsg(useAiApi ? "✅ 已开启魔塔模型对话" : "❌ 已关闭API模式", false, true);
+    }
+
+    document.getElementById('localKbBtn').onclick = function(){
+        useLocalKb = !useLocalKb;
+        this.classList.toggle('active', useLocalKb);
+        if (useLocalKb && useAiApi) { useAiApi = false; document.getElementById('aiApiBtn').classList.remove('active'); }
+        pdfUploadArea.classList.toggle('show', useLocalKb);
+        if(useLocalKb){
+            addMsg("✅ 已开启本地 Ollama 模型对话", false, true);
+        }else{
+            addMsg("❌ 已关闭本地知识库模式", false, true);
+            pdfText = '';
+            pdfStatus.textContent = '未选择文件';
+            pdfFileInput.value = '';
+        }
+    }
+
+    pdfFileInput.onchange = async function () {
+        const file = pdfFileInput.files[0];
+        if (!file || file.type !== 'application/pdf') return;
+        pdfStatus.textContent = '解析中...';
+        const formData = new FormData();
+        formData.append('pdf', file);
+        try {
+            const resp = await fetch('http://localhost:3001/api/upload-pdf', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (data.text) {
+                pdfText = data.text;
+                pdfStatus.textContent = `已解析：${file.name}（${pdfText.length} 字符）`;
+            } else {
+                pdfStatus.textContent = `解析失败：${data.error || '未知错误'}`;
+                pdfText = '';
+            }
+        } catch (e) {
+            pdfStatus.textContent = '上传失败，请确认后端已启动';
+            pdfText = '';
+        }
+    };
+
+</script>          
+  
+</body>
+</html>
