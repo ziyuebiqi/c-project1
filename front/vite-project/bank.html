@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的题库 - C语言AI小助手</title>
+    <style>
+        /* ================= 全局基础设置 ================= */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+        body {
+            background: url("file:///C:/Users/zengm/Desktop/c语言学生学习知识库/背景图1.png") no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            color: #1f2328;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ================= 整体布局 ================= */
+        .app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1500px;
+            height: calc(100vh - 40px);
+            margin: 20px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        /* ================= 左侧侧边栏 ================= */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, rgba(49, 108, 225, 0.9) 0%, rgba(9, 62, 169, 0.6) 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            gap: 12px;
+        }
+        
+        .sidebar-logo {
+            font-size: 20px; font-weight: 600; color: #ffffff;
+            padding: 10px 12px; margin-bottom: 20px; 
+            display: flex; align-items: center; gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2); 
+            padding-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .nav-btn {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border-radius: 10px;
+            color: rgba(255, 255, 255, 0.9); font-size: 15px;
+            cursor: pointer; transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .nav-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+        
+        .nav-btn.active {
+            background-color: #ffffff; color: #4078e8;
+            font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .nav-btn .icon { font-size: 18px; }
+
+        .kb-badge {
+            background: #ef4444; color: white;
+            font-size: 11px; padding: 2px 6px;
+            border-radius: 10px; margin-left: auto;
+        }
+
+        /* ================= 右侧主内容区 ================= */
+        .main-content {
+            flex: 1; display: flex; flex-direction: column;
+            background-color: #f7f7f9; height: 100%; 
+        }
+
+        .top-bar {
+            height: 60px; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 40px;
+            background-color: #f7f7f9; flex-shrink: 0;
+        }
+        .top-bar h2 { font-size: 18px; font-weight: 600; color: #1f2328; }
+        .btn-back {
+            background: #fff; border: 1px solid #e5e7eb;
+            padding: 8px 16px; border-radius: 8px;
+            cursor: pointer; color: #4b5563; font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { background: #f3f4f6; }
+
+        /* 题库列表区 */
+        .bank-content {
+            flex: 1; padding: 20px 40px;
+            overflow-y: auto; scroll-behavior: smooth;
+        }
+
+        /* 题目卡片 */
+        .bank-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            max-width: 900px;
+            margin-left: auto; margin-right: auto;
+            position: relative;
+        }
+
+        .bank-card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+
+        .bank-card-meta { font-size: 13px; color: #888; display: flex; align-items: center; gap: 10px; }
+        
+        .knowledge-tag {
+            background: #f3f4f6; color: #6b7280;
+            font-size: 12px; padding: 4px 10px;
+            border-radius: 6px; border: 1px solid #e5e7eb;
+        }
+
+        .btn-delete {
+            background: transparent; border: none;
+            color: #ef4444; cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; gap: 4px;
+            padding: 4px 8px; border-radius: 6px;
+        }
+        .btn-delete:hover { background: #fef2f2; }
+
+        /* Markdown 内容样式 */
+        .bank-card-body { font-size: 15px; line-height: 1.7; color: #1f2328; }
+        .bank-card-body pre {
+            background: #282c34; color: #abb2bf;
+            padding: 16px; border-radius: 10px;
+            overflow-x: auto; margin: 12px 0; font-size: 14px;
+        }
+        .bank-card-body code {
+            font-family: Consolas, monospace;
+            background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;
+        }
+        .bank-card-body pre code { background: none; padding: 0; color: inherit; }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center; color: #9ca3af; margin-top: 100px;
+        }
+        .empty-state span { font-size: 48px; display: block; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 左侧侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo" onclick="window.location.href='index.html'">
+                <span style="color:#ffffff; font-size:24px;">✦</span> C语言 AI 助手
+            </div>
+            <div class="nav-btn" onclick="window.location.href='index.html'">
+                <span class="icon">🤖</span> 返回对话
+            </div>
+            <div class="nav-btn active" id="myKbBtn">
+                <span class="icon">📚</span> 我的题库
+                <span class="kb-badge" id="kbBadge">0</span>
+            </div>
+        </div>
+
+        <!-- 右侧主内容区 -->
+        <div class="main-content">
+            <div class="top-bar">
+                <h2>📚 我的专属题库</h2>
+                <button class="btn-back" onclick="window.location.href='index.html'">⬅ 返回对话</button>
+            </div>
+
+            <div class="bank-content" id="bankList">
+                <!-- 内容由 JS 动态渲染 -->
+            </div>
+        </div>
+    </div>
+
+<script>
+    // 读取本地存储
+    let questionBank = JSON.parse(localStorage.getItem('myQuestionBank')) || [];
+    const bankList = document.getElementById('bankList');
+    const kbBadge = document.getElementById('kbBadge');
+
+    // 更新红点数量
+    if (questionBank.length > 0) {
+        kbBadge.textContent = questionBank.length;
+    } else {
+        kbBadge.style.display = 'none';
+    }
+
+    // 渲染题库
+    function renderBank() {
+        if (questionBank.length === 0) {
+            bankList.innerHTML = `
+                <div class="empty-state">
+                    <span>📭</span>
+                    <p>你的题库目前是空的，快去对话并收藏题目吧！</p>
+                </div>
+            `;
+            return;
+        }
+
+        bankList.innerHTML = ''; // 清空
+
+        // 倒序排列展示（最新的在最上面）
+        const reversedBank = [...questionBank].reverse();
+
+        reversedBank.forEach((q) => {
+            const card = document.createElement('div');
+            card.className = 'bank-card';
+            
+            // 提取原本生成的 HTML 内容
+            card.innerHTML = `
+                <div class="bank-card-header">
+                    <div class="bank-card-meta">
+                        <span>收录时间：${q.time}</span>
+                        <span>|</span>
+                        <span>知识点：</span>
+                        <span class="knowledge-tag">${q.topic}</span>
+                    </div>
+                    <button class="btn-delete" onclick="deleteQuestion('${q.id}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        删除
+                    </button>
+                </div>
+                <div class="bank-card-body">
+                    ${q.content}
+                </div>
+            `;
+            bankList.appendChild(card);
+        });
+    }
+
+    // 删除题目功能
+    window.deleteQuestion = function(id) {
+        if (!confirm('确定要从题库中删除这道题吗？')) return;
+        
+        // 过滤掉要删除的题目
+        questionBank = questionBank.filter(q => q.id !== id);
+        localStorage.setItem('myQuestionBank', JSON.stringify(questionBank));
+        
+        // 更新视图
+        if (questionBank.length > 0) {
+            kbBadge.textContent = questionBank.length;
+        } else {
+            kbBadge.style.display = 'none';
+        }
+        renderBank();
+    };
+
+    // 页面加载时渲染
+    renderBank();
+</script>
+</body>
+</html>
+
+
+

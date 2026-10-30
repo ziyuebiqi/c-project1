@@ -388,6 +388,100 @@
     let lastQuizContent = '';
     let lastQuizTopic = '';
 
+    // ================= 题库数据 =================
+    let questionBank = JSON.parse(localStorage.getItem('myQuestionBank')) || [];
+    const kbBadge = document.getElementById('kbBadge');
+
+    function updateKbBadge() {
+        if (questionBank.length > 0) {
+            kbBadge.style.display = 'inline-block';
+            kbBadge.textContent = questionBank.length;
+        } else {
+            kbBadge.style.display = 'none';
+        }
+    }
+    updateKbBadge();
+
+    // ================= 界面渲染 =================
+    // 修改点 1：新增 rawText 参数，把原始文本存到 data-raw，方便后续导出干净 Markdown
+    function addMsg(content, isUser = false, skipActionBar = false, rawText = null) {
+        const div = document.createElement('div');
+        div.className = `msg-item ${isUser ? 'msg-right' : 'msg-left'}`;
+
+        let formattedContent = isUser ? content.replace(/\n/g, '<br>') : marked.parse(content);
+        const avatarIcon = isUser ? '👤' : '✦';
+
+        let actionBarHtml = '';
+        if (!isUser && !skipActionBar) {
+            const quizId = 'quiz_' + Date.now() + Math.floor(Math.random() * 1000);
+            const topicTag = lastQuizTopic || 'C语言知识';
+
+            actionBarHtml = `
+                <div class="quiz-action-bar" id="${quizId}">
+                    <div class="quiz-tags-container">
+                        <span style="font-size:13px; color:#888;">知识点:</span>
+                        <span class="knowledge-tag">${topicTag}</span>
+                    </div>
+                    <button class="quiz-action-btn" onclick="addToBank(this, '${quizId}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        加入题库
+                    </button>
+                </div>
+            `;
+        }
+
+        div.innerHTML = `
+            <div class="avatar">${avatarIcon}</div>
+            <div class="bubble ${isUser ? 'user' : ''}">
+                ${formattedContent}
+                ${actionBarHtml}
+            </div>
+        `;
+
+        // 保存原始文本，导出学习文档时使用
+        const bubble = div.querySelector('.bubble');
+        bubble.dataset.raw = rawText !== null ? rawText : content;
+        // 标记是否为系统提示（不导出到学习文档）
+        if (skipActionBar) bubble.dataset.system = '1';
+
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // 加入题库逻辑
+    window.addToBank = function(btn, quizId) {
+        if (btn.classList.contains('added')) return;
+
+        const bubble = btn.closest('.bubble').cloneNode(true);
+        const actionBar = bubble.querySelector('.quiz-action-bar');
+        if (actionBar) actionBar.remove();
+        const questionText = bubble.innerHTML;
+
+        const tagEl = btn.closest('.quiz-action-bar').querySelector('.knowledge-tag');
+        const topic = tagEl ? tagEl.textContent : '未分类';
+
+        const newQuestion = {
+            id: quizId,
+            topic: topic,
+            content: questionText,
+            time: new Date().toLocaleString()
+        };
+
+        questionBank.push(newQuestion);
+        localStorage.setItem('myQuestionBank', JSON.stringify(questionBank));
+
+        btn.classList.add('added');
+        btn.innerHTML = '✅ 已加入题库';
+        updateKbBadge();
+    };
+
+    // 跳转到题库页面
+    document.getElementById('myKbBtn').onclick = function() {
+        window.location.href = 'bank.html';
+    };
+
+
+
     // ================= 聊天逻辑 =================
     function showLoading() {
         const div = document.createElement('div');
