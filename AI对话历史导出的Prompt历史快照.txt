@@ -1,0 +1,6 @@
+修复学习文档按钮：
+https://chat.deepseek.com/share/ieeusqbxglr578ki4a
+学习文档和生成图片按钮的调整以及模型调速
+https://chat.deepseek.com/share/jp289v5unboxjmmy16
+C语言助手对接Ollama
+https://chat.deepseek.com/share/57vvv3klll0g8kujb3

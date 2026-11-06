@@ -1,0 +1,1265 @@
+# **README**
+
+**前端front需要执行的命令**
+
+cd front
+
+npm i vite -g
+npm create vite@latest
+
+npm install
+npm run dev
+
+
+
+**后端（server 文件夹）需要执行安装命令**
+
+进入 server 目录执行：
+
+cd server
+
+npm init -y
+
+npm install express axios cors openai dotenv express cors pdf-parse multer
+
+## //index.html
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C语言AI小助手</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        /* ================= 全局基础设置 ================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft Yahei", sans-serif;
+        }
+        body {
+            background-color: rgb(177, 206, 226);
+            background-size: cover;
+            background-attachment: fixed;
+            color: #1f2328;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ================= 整体布局 ================= */
+        .app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1500px;
+            height: calc(100vh - 40px);
+            margin: 20px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        /* ================= 左侧侧边栏 ================= */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, rgba(49, 108, 225, 0.9) 0%, rgba(9, 62, 169, 0.6) 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            gap: 12px;
+        }
+
+        .sidebar-logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 20px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-btn.active {
+            background-color: #ffffff;
+            color: #4078e8;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn .icon {
+            font-size: 18px;
+        }
+
+        .kb-badge {
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: auto;
+            display: none;
+        }
+
+        /* ================= 右侧主内容区 ================= */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f7f7f9;
+            position: relative;
+            height: 100%;
+        }
+
+        .top-bar {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 24px;
+            background-color: #f7f7f9;
+            flex-shrink: 0;
+        }
+        .top-bar h2 {
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .chat-content {
+            flex: 1;
+            padding: 20px 8%;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .msg-item {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            max-width: 850px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .msg-left { justify-content: flex-start; }
+        .msg-right { justify-content: flex-end; flex-direction: row-reverse; }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #eef3ff;
+            color: #4078e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .msg-right .avatar { background: #4078e8; color: white; }
+
+        .msg-left .bubble {
+            background: #ffffff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            border: 1px solid #e5e7eb;
+            color: #1f2328;
+            max-width: calc(100% - 60px);
+            line-height: 1.7;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .msg-right .bubble {
+            padding: 12px 18px;
+            border-radius: 16px 16px 4px 16px;
+            font-size: 15px;
+            background: #eef3ff;
+            color: #1f2328;
+            max-width: calc(100% - 60px);
+        }
+
+        .bubble pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 12px 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        .bubble code {
+            font-family: Consolas, monospace;
+            background: rgba(0,0,0,0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .bubble pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .quiz-action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed #e5e7eb;
+        }
+        .quiz-tags-container { display: flex; align-items: center; gap: 8px; }
+        .knowledge-tag {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .quiz-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #5c6b8a;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .quiz-action-btn:hover { background: #eef3ff; color: #4078e8; }
+        .quiz-action-btn.added { color: #10b981; background: #ecfdf5; cursor: default; }
+
+        /* ================= 底部输入区 ================= */
+        .chat-bottom {
+            padding: 20px 8% 20px;
+            background-color: #f7f7f9;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .input-box {
+            width: 100%;
+            max-width: 850px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-box:focus-within { border-color: #4078e8; box-shadow: 0 4px 20px rgba(64, 120, 232, 0.1); }
+
+        #inputText {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #1f2328;
+            background: transparent;
+            padding: 8px 0;
+        }
+        #sendBtn {
+            width: 36px; height: 36px; border-radius: 10px; border: none;
+            background: #4078e8; color: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s;
+        }
+
+        #exportQuizBtn {
+            display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+            padding: 10px 24px; background: #4078e8; color: white; border: none; border-radius: 20px;
+            font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(64, 120, 232, 0.3); z-index: 100;
+        }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3); z-index: 999; backdrop-filter: blur(4px); justify-content: center; align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: #fff; padding: 28px; border-radius: 16px; width: 440px; }
+        .modal-box h3 { margin-bottom: 8px; }
+        .modal-box p { font-size: 13px; color: #666; margin-bottom: 20px; }
+        .modal-box input { width: 100%; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 24px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+        .modal-actions button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .btn-cancel { background: #f3f4f6; color: #4b5563; }
+        .btn-confirm { background: #4078e8; color: #fff; }
+
+        .pdf-upload {
+            display: none; max-width: 850px; margin: 0 auto 10px; padding: 8px 16px; background: #fff; border-radius: 10px; font-size: 13px; color: #4078e8; align-items: center; gap: 10px; border: 1px solid #e5e7eb;
+        }
+        .pdf-upload.show { display: flex; }
+
+        #graphContainer { display: none; flex: 1; padding: 20px; position: relative; height: 100%; width: 100%; background: #fff; border-radius: 16px; margin: 0 8%; }
+        #graphChart { width: 100%; height: 100%; min-height: 500px; }
+        #backToChatBtn { position: absolute; top: 20px; right: 20px; z-index: 10; padding: 8px 16px; background: #f3f4f6; color: #4b5563; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 左侧侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <span style="color:#ffffff; font-size:24px;">✦</span> C语言 AI 助手
+            </div>
+            <div class="nav-btn" id="aiApiBtn">
+                <span class="icon">🤖</span> AI 调用访问
+            </div>
+            <div class="nav-btn" id="localKbBtn">
+                <span class="icon">📦</span> 本地知识库访问
+            </div>
+            <div class="nav-btn" id="genQuizBtn">
+                <span class="icon">✍️</span> 生成专属题目
+            </div>
+            <div class="nav-btn" id="downloadDocBtn">
+                <span class="icon">📥</span> 生成学习文档
+            </div>
+            <div class="nav-btn" id="genGraphBtn">
+                <span class="icon">🕸️</span> 生成知识图谱
+            </div>
+            <div class="nav-btn" id="myKbBtn">
+                <span class="icon">📚</span> 我的题库
+                <span class="kb-badge" id="kbBadge">0</span>
+            </div>
+        </div>
+
+        <!-- 右侧主内容区 -->
+        <div class="main-content">
+            <div class="top-bar">
+                <h2>有什么C语言问题，尽管问我</h2>
+            </div>
+
+            <div class="chat-content" id="chatBox">
+                <div class="msg-item msg-left">
+                    <div class="avatar">✦</div>
+                    <div class="bubble" data-raw="你好，我是C语言AI小助手！点击左侧【AI调用访问】或【本地知识库访问】开启对话，也可以点击【生成专属题目】来测试一下自己。">你好，我是C语言AI小助手！点击左侧【AI调用访问】或【本地知识库访问】开启对话，也可以点击【生成专属题目】来测试一下自己。</div>
+                </div>
+            </div>
+
+            <div id="graphContainer">
+                <button id="backToChatBtn">⬅ 返回聊天</button>
+                <div id="graphChart"></div>
+            </div>
+
+            <button id="exportQuizBtn">📥 保存本次试卷 (Markdown)</button>
+
+            <div class="chat-bottom" style="flex-direction: column;">
+                <div class="pdf-upload" id="pdfUploadArea">
+                    <span>📄 上传 PDF：</span>
+                    <input type="file" id="pdfFile" accept="application/pdf">
+                    <span id="pdfStatus">未选择文件</span>
+                </div>
+                <div class="input-box">
+                    <input type="text" id="inputText" placeholder="输入你的问题，按 Enter 发送...">
+                    <button id="sendBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗 HTML -->
+    <div class="modal-overlay" id="quizModal">
+        <div class="modal-box">
+            <h3>✍️ 生成专属考题</h3>
+            <p>请输入你想练习的知识点，AI 将为您生成配套试卷。</p>
+            <input type="text" id="quizTopic" placeholder="例如：C语言指针、数组等">
+            <div class="modal-actions">
+                <button class="btn-cancel" id="cancelQuizBtn">取消</button>
+                <button class="btn-confirm" id="confirmQuizBtn">生成试卷</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const chatBox = document.getElementById('chatBox');
+    const inputText = document.getElementById('inputText');
+    const sendBtn = document.getElementById('sendBtn');
+    const API_URL = 'http://localhost:3000/api/chat';
+    const LOCAL_API_URL = 'http://localhost:3001/api/ollama';
+
+    let useAiApi = false;
+    let useLocalKb = false;
+
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFile');
+    const pdfStatus = document.getElementById('pdfStatus');
+    let pdfText = '';
+    let lastQuizContent = '';
+    let lastQuizTopic = '';
+
+    // ================= 题库数据 =================
+    let questionBank = JSON.parse(localStorage.getItem('myQuestionBank')) || [];
+    const kbBadge = document.getElementById('kbBadge');
+
+    function updateKbBadge() {
+        if (questionBank.length > 0) {
+            kbBadge.style.display = 'inline-block';
+            kbBadge.textContent = questionBank.length;
+        } else {
+            kbBadge.style.display = 'none';
+        }
+    }
+    updateKbBadge();
+
+    // ================= 界面渲染 =================
+    // 修改点 1：新增 rawText 参数，把原始文本存到 data-raw，方便后续导出干净 Markdown
+    function addMsg(content, isUser = false, skipActionBar = false, rawText = null) {
+        const div = document.createElement('div');
+        div.className = `msg-item ${isUser ? 'msg-right' : 'msg-left'}`;
+
+        let formattedContent = isUser ? content.replace(/\n/g, '<br>') : marked.parse(content);
+        const avatarIcon = isUser ? '👤' : '✦';
+
+        let actionBarHtml = '';
+        if (!isUser && !skipActionBar) {
+            const quizId = 'quiz_' + Date.now() + Math.floor(Math.random() * 1000);
+            const topicTag = lastQuizTopic || 'C语言知识';
+
+            actionBarHtml = `
+                <div class="quiz-action-bar" id="${quizId}">
+                    <div class="quiz-tags-container">
+                        <span style="font-size:13px; color:#888;">知识点:</span>
+                        <span class="knowledge-tag">${topicTag}</span>
+                    </div>
+                    <button class="quiz-action-btn" onclick="addToBank(this, '${quizId}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        加入题库
+                    </button>
+                </div>
+            `;
+        }
+
+        div.innerHTML = `
+            <div class="avatar">${avatarIcon}</div>
+            <div class="bubble ${isUser ? 'user' : ''}">
+                ${formattedContent}
+                ${actionBarHtml}
+            </div>
+        `;
+
+        // 保存原始文本，导出学习文档时使用
+        const bubble = div.querySelector('.bubble');
+        bubble.dataset.raw = rawText !== null ? rawText : content;
+        // 标记是否为系统提示（不导出到学习文档）
+        if (skipActionBar) bubble.dataset.system = '1';
+
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // 加入题库逻辑
+    window.addToBank = function(btn, quizId) {
+        if (btn.classList.contains('added')) return;
+
+        const bubble = btn.closest('.bubble').cloneNode(true);
+        const actionBar = bubble.querySelector('.quiz-action-bar');
+        if (actionBar) actionBar.remove();
+        const questionText = bubble.innerHTML;
+
+        const tagEl = btn.closest('.quiz-action-bar').querySelector('.knowledge-tag');
+        const topic = tagEl ? tagEl.textContent : '未分类';
+
+        const newQuestion = {
+            id: quizId,
+            topic: topic,
+            content: questionText,
+            time: new Date().toLocaleString()
+        };
+
+        questionBank.push(newQuestion);
+        localStorage.setItem('myQuestionBank', JSON.stringify(questionBank));
+
+        btn.classList.add('added');
+        btn.innerHTML = '✅ 已加入题库';
+        updateKbBadge();
+    };
+
+    // 跳转到题库页面
+    document.getElementById('myKbBtn').onclick = function() {
+        window.location.href = 'bank.html';
+    };
+
+    // ================= 聊天逻辑 =================
+    function showLoading() {
+        const div = document.createElement('div');
+        div.className = 'msg-item msg-left';
+        div.id = 'loadingMsg';
+        div.innerHTML = `<div class="avatar">✦</div><div class="bubble" style="color:#888;">正在思考中...</div>`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeLoading() {
+        const loading = document.getElementById('loadingMsg');
+        if (loading) loading.remove();
+    }
+
+    async function requestAI(prompt, useLocal, payloadExtra = {}) {
+        const url = useLocal ? LOCAL_API_URL : API_URL;
+        const payload = { message: prompt, ...payloadExtra };
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        return await response.json();
+    }
+
+    async function send() {
+        const text = inputText.value.trim();
+        if (!text) return;
+
+        addMsg(text, true);
+        inputText.value = '';
+        lastQuizTopic = text.substring(0, 10);
+
+        if(!useAiApi && !useLocalKb){
+            addMsg("⚠️ 请先在左侧开启任一模型！", false, true);
+            return;
+        }
+
+        showLoading();
+        try {
+            const payloadExtra = (useLocalKb && pdfText) ? { pdfText } : {};
+            const data = await requestAI(text, useLocalKb, payloadExtra);
+
+            removeLoading();
+            if (data.reply) addMsg(data.reply);
+            else if (data.error) addMsg(`❌ 错误：${data.error}`, false, true);
+        } catch (error) {
+            removeLoading();
+            addMsg(`❌ 网络连接失败！`, false, true);
+        }
+    }
+    sendBtn.onclick = send;
+    inputText.onkeydown = e => { if (e.key === 'Enter') send(); };
+
+    // ================= 其他基础控制逻辑 =================
+    document.getElementById('aiApiBtn').onclick = function(){
+        useAiApi = !useAiApi;
+        this.classList.toggle('active', useAiApi);
+        if (useAiApi && useLocalKb) { useLocalKb = false; document.getElementById('localKbBtn').classList.remove('active'); }
+        pdfUploadArea.classList.toggle('show', useLocalKb);
+        addMsg(useAiApi ? "✅ 已开启魔塔模型对话" : "❌ 已关闭API模式", false, true);
+    }
+
+    document.getElementById('localKbBtn').onclick = function(){
+        useLocalKb = !useLocalKb;
+        this.classList.toggle('active', useLocalKb);
+        if (useLocalKb && useAiApi) { useAiApi = false; document.getElementById('aiApiBtn').classList.remove('active'); }
+        pdfUploadArea.classList.toggle('show', useLocalKb);
+        if(useLocalKb){
+            addMsg("✅ 已开启本地 Ollama 模型对话", false, true);
+        }else{
+            addMsg("❌ 已关闭本地知识库模式", false, true);
+            pdfText = '';
+            pdfStatus.textContent = '未选择文件';
+            pdfFileInput.value = '';
+        }
+    }
+
+    pdfFileInput.onchange = async function () {
+        const file = pdfFileInput.files[0];
+        if (!file || file.type !== 'application/pdf') return;
+        pdfStatus.textContent = '解析中...';
+        const formData = new FormData();
+        formData.append('pdf', file);
+        try {
+            const resp = await fetch('http://localhost:3001/api/upload-pdf', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (data.text) {
+                pdfText = data.text;
+                pdfStatus.textContent = `已解析：${file.name}（${pdfText.length} 字符）`;
+            } else {
+                pdfStatus.textContent = `解析失败：${data.error || '未知错误'}`;
+                pdfText = '';
+            }
+        } catch (e) {
+            pdfStatus.textContent = '上传失败，请确认后端已启动';
+            pdfText = '';
+        }
+    };
+
+    // ================= 题目生成与导出 =================
+    const quizModal = document.getElementById('quizModal');
+    const quizTopic = document.getElementById('quizTopic');
+    const exportQuizBtn = document.getElementById('exportQuizBtn');
+
+    document.getElementById('genQuizBtn').onclick = function() {
+        if (!useLocalKb && !useAiApi) return addMsg("⚠️ 请先在左侧开启任一模型！", false, true);
+        quizModal.classList.add('show');
+        quizTopic.value = '';
+        quizTopic.focus();
+    };
+
+    document.getElementById('cancelQuizBtn').onclick = function() {
+        quizModal.classList.remove('show');
+    };
+
+    document.getElementById('confirmQuizBtn').onclick = async function() {
+        const topic = quizTopic.value.trim();
+        if (!topic) return alert('请输入知识点！');
+
+        quizModal.classList.remove('show');
+        exportQuizBtn.style.display = 'none';
+        lastQuizTopic = topic;
+
+        const prompt = `你现在是一个C语言出题老师。请围绕【${topic}】这个知识点出一套试卷。严格包含单选题、改错题、编程题。必须包含答案解析。请使用 Markdown 格式排版。`;
+
+        addMsg(`请帮我出关于【${topic}】的题目`, true);
+        showLoading();
+
+        try {
+            const payloadExtra = (useLocalKb && pdfText) ? { pdfText } : {};
+            const data = await requestAI(prompt, useLocalKb, payloadExtra);
+
+            removeLoading();
+            if (data.reply) {
+                addMsg(data.reply, false, false);
+                lastQuizContent = data.reply;
+                exportQuizBtn.style.display = 'block';
+            }
+            else if (data.error) addMsg(`❌ 错误：${data.error}`, false, true);
+        } catch (error) {
+            removeLoading();
+            addMsg(`❌ 网络连接失败！`, false, true);
+        }
+    };
+
+    exportQuizBtn.onclick = function() {
+        if (!lastQuizContent) return;
+        const docHeader = `# C语言专项练习：${lastQuizTopic}\n\n生成时间：${new Date().toLocaleString()}\n\n---\n\n`;
+        const fullContent = docHeader + lastQuizContent;
+        const blob = new Blob([fullContent], { type: 'text/markdown;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `C语言题目_${lastQuizTopic}_${new Date().toISOString().slice(0,10)}.md`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        addMsg(`📥 题目文件已导出！`, true);
+    };
+
+    // ================= 生成学习文档（核心新增） =================
+    document.getElementById('downloadDocBtn').onclick = function() {
+        const msgItems = document.querySelectorAll('.msg-item');
+        let docContent = '';
+        let questionCount = 0;
+
+        msgItems.forEach(item => {
+            if (item.id === 'loadingMsg') return;
+            const bubble = item.querySelector('.bubble');
+            if (!bubble) return;
+            // 过滤系统提示（开启/关闭模型、错误提示等）
+            if (bubble.dataset.system === '1') return;
+
+            // 优先用 data-raw 里的原始 Markdown 文本
+            const raw = (bubble.dataset.raw || bubble.innerText || '').trim();
+            if (!raw) return;
+
+            const isUser = item.classList.contains('msg-right');
+            if (isUser) {
+                questionCount++;
+                docContent += `## 问题 ${questionCount}\n\n${raw}\n\n`;
+            } else {
+                docContent += `### 解答\n\n${raw}\n\n---\n\n`;
+            }
+        });
+
+        if (questionCount === 0) {
+            alert('当前还没有问答记录，先去问点问题吧！');
+            return;
+        }
+
+        const header = `# C语言学习文档\n\n生成时间：${new Date().toLocaleString()}\n\n共整理 ${questionCount} 个问题\n\n---\n\n`;
+        const fullContent = header + docContent;
+
+        const blob = new Blob([fullContent], { type: 'text/markdown;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `C语言学习文档_${new Date().toISOString().slice(0,10)}.md`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+
+        addMsg(`📥 学习文档已导出，共整理 ${questionCount} 个问题！`, true);
+    };
+
+    // ================= 生成知识图谱 =================
+    const graphContainer = document.getElementById('graphContainer');
+    let myChart = null;
+
+    document.getElementById('backToChatBtn').onclick = function() {
+        graphContainer.style.display = 'none';
+        chatBox.style.display = 'block';
+    };
+
+    //=========================两个模块==========================
+    document.getElementById('genGraphBtn').onclick = async function() {
+    // 改动1：魔塔 API 或 Ollama 任一开启即可
+    if (!useLocalKb && !useAiApi) {
+        return addMsg("⚠️ 请先在左侧开启任一模型（AI 调用访问 或 本地知识库访问）！", false, true);
+    }
+
+    const msgItems = document.querySelectorAll('.msg-item');
+    let historyText = "";
+    msgItems.forEach(item => {
+        const text = item.querySelector('.bubble').innerText.trim();
+        if (text.includes('已开启') || text.includes('已关闭') || text.includes('正在思考')) return;
+        historyText += (item.classList.contains('msg-right') ? `学生问：${text}\n` : `AI答：${text}\n`);
+    });
+
+    if (historyText.length < 10) return addMsg("⚠️ 聊天内容太少！", false, true);
+
+    addMsg("正在提取数据并构建知识图谱...", true);
+    showLoading();
+
+    try {
+        const prompt = `你是数据提取机器人。请提取对话中的知识点关系。必须且只能输出合法的 JSON 格式，绝对不要输出任何解释性文字，不要使用 \`\`\`json 包裹！
+格式样例：
+{
+  "nodes": [{"name": "核心概念", "category": 0, "symbolSize": 50}],
+  "links": [{"source": "核心概念", "target": "薄弱点A", "value": "包含"}],
+  "categories": [{"name": "核心模块"}, {"name": "普通知识点"}, {"name": "薄弱/易错点"}]
+}
+对话记录：\n${historyText}`;
+
+        // 改动2：根据当前开启的模型决定走 3000(魔塔) 还是 3001(Ollama)
+        const payloadExtra = (useLocalKb && pdfText) ? { pdfText } : {};
+        const data = await requestAI(prompt, useLocalKb, payloadExtra);
+        removeLoading();
+
+        if (data.reply) {
+            let jsonStr = data.reply;
+            const firstBrace = jsonStr.indexOf('{');
+            const lastBrace = jsonStr.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+            }
+
+            const graphData = JSON.parse(jsonStr);
+            chatBox.style.display = 'none';
+            graphContainer.style.display = 'block';
+
+            if (!myChart) myChart = echarts.init(document.getElementById('graphChart'));
+
+            const option = {
+                tooltip: { formatter: '{b}' },
+                legend: [{ data: graphData.categories.map(a => a.name), bottom: 0 }],
+                series: [{
+                    type: 'graph', layout: 'force', data: graphData.nodes, links: graphData.links, categories: graphData.categories, roam: true,
+                    label: { show: true, position: 'right', formatter: '{b}' },
+                    force: { repulsion: 300, edgeLength: [50, 150], useWorker: true },
+                    itemStyle: { color: function(params) { return ['#4078e8', '#8b5cf6', '#e84c3d'][params.data.category || 0]; }},
+                    lineStyle: { color: 'source', curveness: 0.2, width: 2 },
+                    edgeSymbol: ['none', 'arrow'], edgeSymbolSize: 8
+                }]
+            };
+            myChart.setOption(option);
+            setTimeout(() => { myChart.resize(); }, 100);
+            addMsg("✅ 知识图谱生成成功！已展示在右侧。", true);
+        } else if (data.error) {
+            addMsg(`❌ 错误：${data.error}`, false, true);
+        }
+    } catch (error) {
+        removeLoading();
+        addMsg(`❌ 解析失败：模型输出的格式不标准。你可以再点一次重试。`, false, true);
+    }
+};
+
+</script>
+</body>
+</html>
+```
+
+## //bank.html
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的题库 - C语言AI小助手</title>
+    <style>
+        /* ================= 全局基础设置 ================= */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        }
+        body {
+            background: url("file:///C:/Users/zengm/Desktop/c语言学生学习知识库/背景图1.png") no-repeat center center;
+            background-size: cover;
+            background-attachment: fixed;
+            color: #1f2328;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ================= 整体布局 ================= */
+        .app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1500px;
+            height: calc(100vh - 40px);
+            margin: 20px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        /* ================= 左侧侧边栏 ================= */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, rgba(49, 108, 225, 0.9) 0%, rgba(9, 62, 169, 0.6) 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            gap: 12px;
+        }
+        
+        .sidebar-logo {
+            font-size: 20px; font-weight: 600; color: #ffffff;
+            padding: 10px 12px; margin-bottom: 20px; 
+            display: flex; align-items: center; gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2); 
+            padding-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .nav-btn {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border-radius: 10px;
+            color: rgba(255, 255, 255, 0.9); font-size: 15px;
+            cursor: pointer; transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .nav-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+        
+        .nav-btn.active {
+            background-color: #ffffff; color: #4078e8;
+            font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .nav-btn .icon { font-size: 18px; }
+
+        .kb-badge {
+            background: #ef4444; color: white;
+            font-size: 11px; padding: 2px 6px;
+            border-radius: 10px; margin-left: auto;
+        }
+
+        /* ================= 右侧主内容区 ================= */
+        .main-content {
+            flex: 1; display: flex; flex-direction: column;
+            background-color: #f7f7f9; height: 100%; 
+        }
+
+        .top-bar {
+            height: 60px; display: flex; align-items: center;
+            justify-content: space-between; padding: 0 40px;
+            background-color: #f7f7f9; flex-shrink: 0;
+        }
+        .top-bar h2 { font-size: 18px; font-weight: 600; color: #1f2328; }
+        .btn-back {
+            background: #fff; border: 1px solid #e5e7eb;
+            padding: 8px 16px; border-radius: 8px;
+            cursor: pointer; color: #4b5563; font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { background: #f3f4f6; }
+
+        /* 题库列表区 */
+        .bank-content {
+            flex: 1; padding: 20px 40px;
+            overflow-y: auto; scroll-behavior: smooth;
+        }
+
+        /* 题目卡片 */
+        .bank-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            max-width: 900px;
+            margin-left: auto; margin-right: auto;
+            position: relative;
+        }
+
+        .bank-card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+
+        .bank-card-meta { font-size: 13px; color: #888; display: flex; align-items: center; gap: 10px; }
+        
+        .knowledge-tag {
+            background: #f3f4f6; color: #6b7280;
+            font-size: 12px; padding: 4px 10px;
+            border-radius: 6px; border: 1px solid #e5e7eb;
+        }
+
+        .btn-delete {
+            background: transparent; border: none;
+            color: #ef4444; cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; gap: 4px;
+            padding: 4px 8px; border-radius: 6px;
+        }
+        .btn-delete:hover { background: #fef2f2; }
+
+        /* Markdown 内容样式 */
+        .bank-card-body { font-size: 15px; line-height: 1.7; color: #1f2328; }
+        .bank-card-body pre {
+            background: #282c34; color: #abb2bf;
+            padding: 16px; border-radius: 10px;
+            overflow-x: auto; margin: 12px 0; font-size: 14px;
+        }
+        .bank-card-body code {
+            font-family: Consolas, monospace;
+            background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px;
+        }
+        .bank-card-body pre code { background: none; padding: 0; color: inherit; }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center; color: #9ca3af; margin-top: 100px;
+        }
+        .empty-state span { font-size: 48px; display: block; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- 左侧侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-logo" onclick="window.location.href='index.html'">
+                <span style="color:#ffffff; font-size:24px;">✦</span> C语言 AI 助手
+            </div>
+            <div class="nav-btn" onclick="window.location.href='index.html'">
+                <span class="icon">🤖</span> 返回对话
+            </div>
+            <div class="nav-btn active" id="myKbBtn">
+                <span class="icon">📚</span> 我的题库
+                <span class="kb-badge" id="kbBadge">0</span>
+            </div>
+        </div>
+
+        <!-- 右侧主内容区 -->
+        <div class="main-content">
+            <div class="top-bar">
+                <h2>📚 我的专属题库</h2>
+                <button class="btn-back" onclick="window.location.href='index.html'">⬅ 返回对话</button>
+            </div>
+
+            <div class="bank-content" id="bankList">
+                <!-- 内容由 JS 动态渲染 -->
+            </div>
+        </div>
+    </div>
+
+<script>
+    // 读取本地存储
+    let questionBank = JSON.parse(localStorage.getItem('myQuestionBank')) || [];
+    const bankList = document.getElementById('bankList');
+    const kbBadge = document.getElementById('kbBadge');
+
+    // 更新红点数量
+    if (questionBank.length > 0) {
+        kbBadge.textContent = questionBank.length;
+    } else {
+        kbBadge.style.display = 'none';
+    }
+
+    // 渲染题库
+    function renderBank() {
+        if (questionBank.length === 0) {
+            bankList.innerHTML = `
+                <div class="empty-state">
+                    <span>📭</span>
+                    <p>你的题库目前是空的，快去对话并收藏题目吧！</p>
+                </div>
+            `;
+            return;
+        }
+
+        bankList.innerHTML = ''; // 清空
+
+        // 倒序排列展示（最新的在最上面）
+        const reversedBank = [...questionBank].reverse();
+
+        reversedBank.forEach((q) => {
+            const card = document.createElement('div');
+            card.className = 'bank-card';
+            
+            // 提取原本生成的 HTML 内容
+            card.innerHTML = `
+                <div class="bank-card-header">
+                    <div class="bank-card-meta">
+                        <span>收录时间：${q.time}</span>
+                        <span>|</span>
+                        <span>知识点：</span>
+                        <span class="knowledge-tag">${q.topic}</span>
+                    </div>
+                    <button class="btn-delete" onclick="deleteQuestion('${q.id}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        删除
+                    </button>
+                </div>
+                <div class="bank-card-body">
+                    ${q.content}
+                </div>
+            `;
+            bankList.appendChild(card);
+        });
+    }
+
+    // 删除题目功能
+    window.deleteQuestion = function(id) {
+        if (!confirm('确定要从题库中删除这道题吗？')) return;
+        
+        // 过滤掉要删除的题目
+        questionBank = questionBank.filter(q => q.id !== id);
+        localStorage.setItem('myQuestionBank', JSON.stringify(questionBank));
+        
+        // 更新视图
+        if (questionBank.length > 0) {
+            kbBadge.textContent = questionBank.length;
+        } else {
+            kbBadge.style.display = 'none';
+        }
+        renderBank();
+    };
+
+    // 页面加载时渲染
+    renderBank();
+</script>
+</body>
+</html>
+
+
+```
+
+## //index.js
+
+```js
+const express = require('express');
+const cors = require('cors');
+const OpenAI = require('openai');
+require('dotenv').config(); // 如果你用 .env 文件存 token
+
+const app = express();
+const port = 3000; // 后端运行在 3000 端口
+
+// 中间件
+app.use(cors()); // 允许前端跨域请求
+app.use(express.json()); // 解析 JSON 请求体
+
+// 初始化魔塔 API 客户端
+// 注意：把你完整的 ms- 令牌填在这里，或者写在 .env 文件里
+const client = new OpenAI({
+    apiKey: 'ms-c2b22f8d-7325-4228-9c09-6a2b7f75b628', // 替换为你的真实令牌
+    baseURL: 'https://api-inference.modelscope.cn/v1'
+});
+
+// 处理聊天接口
+app.post('/api/chat', async (req, res) => {
+    const { message } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: '请求参数缺失，请提供 message' });
+    }
+
+    try {
+        console.log(`收到前端消息: ${message}`);
+
+        // 调用 deepseek-ai/DeepSeek-V4.1-Flash 模型
+        const response = await client.chat.completions.create({
+            model: 'Qwen/Qwen3.5-35B-A3B',
+            messages: [
+                { role: 'system', content: '你是一个专业的C语言AI小助手，负责解答C语言问题、批改代码。回答请简洁明了。' },
+                { role: 'user', content: message }
+            ],
+            temperature: 0.6,
+            max_tokens: 2048,
+        });
+
+        // 提取回复内容
+        const aiReply = response.choices[0].message.content;
+        
+        // 返回给前端
+        res.json({ reply: aiReply });
+
+    } catch (error) {
+        console.error('调用 API 出错:', error);
+        res.status(500).json({ error: 'AI 服务暂时不可用，请稍后再试' });
+    }
+});
+
+// 启动服务
+app.listen(port, () => {
+    console.log(`后端服务已启动: http://localhost:${port}`);
+});
+
+
+```
+
+## //server-ollama.js
+
+```js
+// 最顶部加这一行，兼容 pdf-parse v2 在 Node 环境的依赖
+require('pdf-parse/worker'); 
+
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const { PDFParse } = require('pdf-parse');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+const port = 3001; 
+
+app.use(cors());
+app.use(express.json());
+
+// ===== 文件上传配置 =====
+const upload = multer({ dest: path.join(__dirname, 'uploads_tmp') });
+const tmpDir = path.join(__dirname, 'uploads_tmp');
+if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+
+const OLLAMA_URL = 'http://localhost:11434/api/chat';
+// 确认此处是你现在测试的模型名称
+const OLLAMA_MODEL = 'qwen3:4b'; //换成8b的pdf会对接错误
+
+// ================= PDF 解析接口 =================
+app.post('/api/upload-pdf', upload.single('pdf'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: '未收到 PDF 文件' });
+    const filePath = req.file.path;
+    
+    try {
+        const buffer = fs.readFileSync(filePath);
+        const parser = new PDFParse({ data: buffer });
+        const result = await parser.getText();
+        await parser.destroy(); 
+        
+        const text = (result.text || '').trim();
+        if (!text) return res.status(400).json({ error: 'PDF 中未提取到文本' });
+        
+        const MAX_LEN = 12000;
+        const trimmed = text.length > MAX_LEN ? text.slice(0, MAX_LEN) + '\n...(内容过长已截断)' : text;
+        res.json({ text: trimmed });
+    } catch (err) {
+        console.error('PDF 解析失败:', err);
+        res.status(500).json({ error: 'PDF 解析失败：' + err.message });
+    } finally {
+        fs.unlink(filePath, () => {});
+    }
+});
+
+// ================= 聊天接口 =================
+app.post('/api/ollama', async (req, res) => {
+    const { message, pdfText } = req.body;
+
+    if (!message) return res.status(400).json({ error: '请求参数缺失，请提供 message' });
+
+    try {
+        console.log(`收到前端消息: ${message}${pdfText ? ' [附带PDF上下文]' : ''}`);
+
+        const systemContent = pdfText
+            ? `你是一个专业的C语言AI小助手，负责解答C语言问题、批改代码。下面是一份用户上传的PDF资料，请结合它回答问题：\n\n【PDF资料开始】\n${pdfText}\n【PDF资料结束】`
+            : '你是一个专业的C语言AI小助手，负责解答C语言问题、批改代码。回答请简洁明了。';
+
+        const response = await fetch(OLLAMA_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: OLLAMA_MODEL,
+                messages: [
+                    { role: 'system', content: systemContent },
+                    { role: 'user', content: message }
+                ],
+                stream: false
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error('Ollama 返回错误:', response.status, errText);
+            return res.status(500).json({ error: 'Ollama 服务返回错误，请检查模型是否已加载' });
+        }
+
+        const data = await response.json();
+        const aiReply = data.message && data.message.content ? data.message.content : '（模型未返回内容）';
+        res.json({ reply: aiReply });
+
+    } catch (error) {
+        console.error('调用 Ollama 出错:', error);
+        res.status(500).json({ error: '本地 AI 服务暂时不可用，请确认 Ollama 已启动并已拉取对应模型' });
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Ollama 后端服务已启动: http://localhost:${port}`);
+});
+```
+
+启动
+
+```javascript
+PS C:\Users\zengm\Desktop\c语言学生学习知识库\项目1> cd .\front\vite-project\
+PS C:\Users\zengm\Desktop\c语言学生学习知识库\项目1\front\vite-project> .\index.html
+PS C:\Users\zengm\Desktop\c语言学生学习知识库\项目1\front\vite-project> .\bank.html
+PS C:\Users\zengm\Desktop\c语言学生学习知识库\项目1\server> node server-ollama.js
+PS C:\Users\zengm\Desktop\c语言学生学习知识库\项目1\server> node index.js
+
+```
+
+
+
+
+
